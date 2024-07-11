@@ -17,23 +17,23 @@ namespace APICatalogo.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Produto>> Get()
+        public async Task<ActionResult<IEnumerable<Produto>>> GetAsync()
         {
-            var produtos = _context.Produtos.Take(10).AsNoTracking().ToList();
+            var produtos = await _context.Produtos.Take(10).AsNoTracking().ToListAsync();
 
             if (produtos == null) return NotFound("Produtos não encontrados...");
             
-            return produtos;
+            return Ok(produtos);
         }
 
-        [HttpGet("{id:int}", Name = "ObterProduto")]
-        public ActionResult<Produto> GetById(int id)
-        {
-            Produto? produto = _context.Produtos.FirstOrDefault(p => p.ProdutoId == id);
+        [HttpGet("{id:int:min(1)}", Name = "ObterProduto")]
+        public async Task<ActionResult<Produto>> GetByIdAsync(int id)
+        {   
+            Produto? produto = await _context.Produtos.FirstOrDefaultAsync(p => p.ProdutoId == id);
 
             if (produto == null) return NotFound($"O produto de id {id} não existe.");
 
-            return produto;
+            return Ok(produto);
         }
 
         [HttpPost]
@@ -47,7 +47,7 @@ namespace APICatalogo.Controllers
             return new CreatedAtRouteResult("ObterProduto", new { id = produto.ProdutoId }, produto);
         }
 
-        [HttpPut("{id:int}")]
+        [HttpPut("{id:int:min(1)}")]
         public ActionResult Put(int id, Produto produto)
         {
             if (id != produto.ProdutoId) return BadRequest();
@@ -58,7 +58,7 @@ namespace APICatalogo.Controllers
             return Ok(produto);
         }
 
-        [HttpDelete("{id:int}")]
+        [HttpDelete("{id:int:min(1)}")]
         public ActionResult Delete(int id)
         {
             var produto = _context.Produtos.FirstOrDefault(p => p.ProdutoId == id);
