@@ -1,8 +1,6 @@
-﻿using APICatalogo.Context;
-using APICatalogo.Filters;
-using APICatalogo.Models;
+﻿using APICatalogo.Models;
+using APICatalogo.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace APICatalogo.Controllers
 {
@@ -10,30 +8,32 @@ namespace APICatalogo.Controllers
     [ApiController]
     public class CategoriasController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ICategoriaRepository _repository;
 
-        public CategoriasController(AppDbContext context)
+        public CategoriasController(ICategoriaRepository repository)
         {
-            _context = context;
+            _repository = repository;
         }
 
-        [HttpGet("produtos")]
-        [ServiceFilter(typeof(ApiLoggingFilter))]
-        public async Task<ActionResult<IEnumerable<Categoria>>> GetCategoriasProdutosAsync()
-        {
-            return Ok(await _context.Categorias.Include(p => p.Produtos).Where(c => c.CategoriaId <= 5).AsNoTracking().ToListAsync());
-        }
+        //[HttpGet("produtos")]
+        //[ServiceFilter(typeof(ApiLoggingFilter))]
+        //public async Task<ActionResult<IEnumerable<Categoria>>> GetCategoriasProdutosAsync()
+        //{
+        //    return Ok(await _context.Categorias.Include(p => p.Produtos).Where(c => c.CategoriaId <= 5).AsNoTracking().ToListAsync());
+        //}
         
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Categoria>>> Get()
+        public ActionResult<IEnumerable<Categoria>> Get()
         {
-            return Ok(await _context.Categorias.Take(10).AsNoTracking().ToListAsync());
+            IEnumerable<Categoria> categorias = _repository.GetCategorias();
+            
+            return Ok(categorias);
         }
 
         [HttpGet("{id:int:min(1)}", Name = "ObterCategoria")]
-        public async Task<ActionResult<Categoria>> GetByIdAsync(int id)
+        public ActionResult<Categoria> GetById(int id)
         {
-            var categoria = await _context.Categorias.FirstOrDefaultAsync(p => p.CategoriaId == id);
+            Categoria categoria = _repository.GetCategoria(id);
 
             if (categoria == null) return NotFound($"A categoria de id {id} não existe.");
   
@@ -45,10 +45,9 @@ namespace APICatalogo.Controllers
         {
             if (categoria is null) return BadRequest();
 
-            _context.Categorias.Add(categoria);
-            _context.SaveChanges();
+            Categoria categoriaCriada = _repository.Create(categoria);
 
-            return new CreatedAtRouteResult("ObterCategoria", new { id = categoria.CategoriaId }, categoria);
+            return new CreatedAtRouteResult("ObterCategoria", new { id = categoriaCriada.CategoriaId }, categoriaCriada);
         }
 
         [HttpPut("{id:int:min(1)}")]
@@ -56,23 +55,21 @@ namespace APICatalogo.Controllers
         {
             if (id != categoria.CategoriaId) return BadRequest();
 
-            _context.Entry(categoria).State = EntityState.Modified;
-            _context.SaveChanges();
+            Categoria categoriaAtualizada = _repository.Update(id, categoria);
             
-            return Ok(categoria);
+            return Ok(categoriaAtualizada);
         }
 
         [HttpDelete("{id:int:min(1)}")]
         public ActionResult Delete(int id)
         {
-            var categoria = _context.Categorias.FirstOrDefault(p => p.CategoriaId == id);
+            Categoria categoria = _repository.GetCategoria(id);
 
             if (categoria == null) return NotFound($"A categoria de id {id} não existe.");
 
-            _context.Categorias.Remove(categoria);
-            _context.SaveChanges();
-            
-            return Ok(categoria);
+            Categoria categoriaExcluida = _repository.Delete(id);
+
+            return Ok(categoriaExcluida);
         }
 
     }
