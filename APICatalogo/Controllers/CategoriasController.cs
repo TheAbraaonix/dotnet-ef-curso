@@ -1,8 +1,10 @@
 ﻿using APICatalogo.DTOs;
 using APICatalogo.Models;
+using APICatalogo.Pagination;
 using APICatalogo.Repositories;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace APICatalogo.Controllers
 {
@@ -28,6 +30,38 @@ namespace APICatalogo.Controllers
 
             IEnumerable<CategoriaDTO> categoriasDto = _mapper.Map<IEnumerable<CategoriaDTO>>(categorias);
             return Ok(categoriasDto);
+        }
+
+        [HttpGet("pagination")]
+        public ActionResult<IEnumerable<CategoriaDTO>> Get([FromQuery] CategoriasParameters categoriasParams)
+        {
+            PagedList<Categoria> categorias = _uof.CategoriaRepository.GetCategorias(categoriasParams);
+            return ObterCategorias(categorias);
+        }
+
+        [HttpGet("filter/nome/pagination")]
+        public ActionResult<IEnumerable<CategoriaDTO>> GetCategoriasFiltradas([FromQuery] CategoriasFiltroNome categoriasFiltro)
+        {
+            var categoriasFiltradas = _uof.CategoriaRepository.GetCategoriaFiltroNome(categoriasFiltro);
+            return ObterCategorias(categoriasFiltradas);
+        }
+
+        private ActionResult<IEnumerable<CategoriaDTO>> ObterCategorias(PagedList<Categoria> categorias)
+        {
+            var metadada = new
+            {
+                categorias.TotalCount,
+                categorias.PageSize,
+                categorias.CurrentPage,
+                categorias.TotalPages,
+                categorias.HasNext,
+                categorias.HasPrevious
+            };
+
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadada));
+
+            IEnumerable<CategoriaDTO> categoriaDto = _mapper.Map<IEnumerable<CategoriaDTO>>(categorias);
+            return Ok(categoriaDto);
         }
 
         [HttpGet("{id:int:min(1)}", Name = "ObterCategoria")]
