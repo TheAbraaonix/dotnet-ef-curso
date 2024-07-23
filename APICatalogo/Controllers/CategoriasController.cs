@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Newtonsoft.Json;
 using X.PagedList;
+using Microsoft.AspNetCore.Http;
 
 namespace APICatalogo.Controllers
 {
@@ -30,6 +31,9 @@ namespace APICatalogo.Controllers
         [HttpGet]
         //[Authorize]
         [DisableRateLimiting]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        [ProducesDefaultResponseType]
         public async Task<ActionResult<IEnumerable<CategoriaDTO>>> Get()
         {
             IEnumerable<Categoria> categorias = await _uof.CategoriaRepository.GetAllAsync();
@@ -72,8 +76,15 @@ namespace APICatalogo.Controllers
             return Ok(categoriaDto);
         }
 
+        /// <summary>
+        /// Obtem uma Categoria pelo seu Id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns>Objetos Categoria</returns>
         [DisableCors]
         [HttpGet("{id:int:min(1)}", Name = "ObterCategoria")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<CategoriaDTO>> GetById(int id)
         {
             Categoria? categoria = await _uof.CategoriaRepository.GetAsync(c => c.CategoriaId == id);
@@ -85,6 +96,9 @@ namespace APICatalogo.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesDefaultResponseType]
         public async Task<ActionResult<CategoriaDTO>> Post(CategoriaDTO categoriaDto)
         {
             if (categoriaDto is null) return BadRequest();
@@ -99,6 +113,10 @@ namespace APICatalogo.Controllers
         }
 
         [HttpPut("{id:int:min(1)}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        [ProducesDefaultResponseType]
         public async Task<ActionResult<CategoriaDTO>> Put(int id, CategoriaDTO categoriaDto)
         {
             if (id != categoriaDto.CategoriaId) return BadRequest();
@@ -116,6 +134,9 @@ namespace APICatalogo.Controllers
 
         [HttpDelete("{id:int:min(1)}")]
         [Authorize(Policy = "AdminOnly")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        [ProducesDefaultResponseType]
         public async Task<ActionResult<CategoriaDTO>> Delete(int id)
         {
             Categoria? categoria = await _uof.CategoriaRepository.GetAsync(c => c.CategoriaId == id);

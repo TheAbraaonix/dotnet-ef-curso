@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +36,27 @@ builder.Services.AddCors(options =>
 );
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "APICatalogo",
+        Description = "Catálogo de produtos e categorias",
+        //TermsOfService = new Uri("google.com.br"),
+        Contact = new OpenApiContact
+        {
+            Name = "Holanda",
+            Email = "email",
+        },
+        License = new OpenApiLicense
+        {
+            Name = "Usar sobre LICX"
+        }
+    });
+});
+
+var xmlFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
@@ -44,8 +66,8 @@ builder.Services.AddAuthentication("Bearer").AddJwtBearer();
 
 string mySqlConnection = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddDbContext<AppDbContext>(options => 
-    options.UseMySql(mySqlConnection, 
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(mySqlConnection,
         ServerVersion.AutoDetect(mySqlConnection)));
 
 var secretKey = builder.Configuration["JWT:SecretKey"] ?? throw new ArgumentException("Invalid secret key!");
@@ -76,7 +98,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("Admin").RequireClaim("id", "holanda"));
     options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
-    options.AddPolicy("ExclusivePolicyOnly ", policy => 
+    options.AddPolicy("ExclusivePolicyOnly ", policy =>
                         policy.RequireAssertion(context =>
                         context.User.HasClaim(claim =>
                                               claim.Type == "id" && claim.Value == "holanda")
